@@ -1,19 +1,21 @@
 package me.hyname.storage.impl;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.ServerAddress;
-import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
+
 import me.hyname.model.*;
 import me.hyname.storage.Storage;
-import org.bson.Document;
-import org.bson.conversions.Bson;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bson.Document;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -30,31 +32,44 @@ import java.util.function.Consumer;
  * <p>- easy to convert to json + reading objects is a breeze.
  */
 public class MongoStorage extends Storage {
-
-    private String host;
+    Logger logger = LogManager.getRootLogger();
+    
+    private String hostname;
     private int port;
+
     private MongoClient client;
     private MongoDatabase database;
-
 
     private MongoCollection<Document> albumCollection;
     private MongoCollection<Document> artistCollection;
     private MongoCollection<Document> trackCollection;
 
-    public MongoStorage(String host, int port) {
-        this.host = host;
+    public MongoStorage(String hostname, int port) {
+        this.hostname = hostname;
         this.port = port;
-    }
 
+        init();
+    }
 
     @Override
     public void init() {
-        MongoClientOptions options = new MongoClientOptions.Builder()
-                .connectTimeout(1000)
-                .serverSelectionTimeout(100)
-                .maxWaitTime(2000)
-                .build();
-        this.client = new MongoClient(new ServerAddress(host, port), options);
+        logger.info("Initializing MongoDB connection on '{}:{}'", hostname, port);
+        setup();
+        logger.info("Successfully initialized MongoDB connection");
+    }
+
+    public void setup() {
+        // https://stackoverflow.com/questions/70532601/java-package-mongoclientoptions-does-not-exist
+        
+        String connectionString = "mongodb://" + hostname + ":" + port;
+
+        MongoClientSettings.Builder mcsb = MongoClientSettings.builder();
+        MongoClientSettings mcs = mcsb
+            .applicationName("ZuneAPIService")
+            .applyConnectionString(new ConnectionString(connectionString))
+            .build();
+        
+        this.client = MongoClients.create(mcs);
 
         this.database = client.getDatabase("zune");
         this.albumCollection = database.getCollection("albums");
@@ -294,12 +309,11 @@ public class MongoStorage extends Storage {
         return finalOutput;
     }
 
-
-    public int getPort() {
-        return port;
-    }
-
-    public String getHost() {
-        return host;
+    @Override
+    public boolean shutdown() {
+        // Mongo's library doesn't appear to have a definitive "yes, we closed the connection"
+        // So, hope for the best
+        client.close();
+        return true;
     }
 }

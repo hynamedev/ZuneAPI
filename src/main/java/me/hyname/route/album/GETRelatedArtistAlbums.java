@@ -1,36 +1,53 @@
 package me.hyname.route.album;
 
-import me.hyname.Main;
-import me.hyname.model.*;
-import spark.Request;
-import spark.Response;
-import spark.Route;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-public class GETRelatedArtistAlbums implements Route {
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import me.hyname.enums.ParamEnum;
+import me.hyname.model.Album;
+import me.hyname.model.Artist;
+import me.hyname.model.Feed;
+import me.hyname.model.Genre;
+import me.hyname.model.Mood;
+import me.hyname.route.AbstractRoute;
+import me.hyname.storage.Storage;
+
+public class GETRelatedArtistAlbums extends AbstractRoute {
+
+    public GETRelatedArtistAlbums(Storage storage, JAXBContext jaxb) {
+        super(storage, jaxb);
+    }
+
     @Override
-    public Object handle(Request request, Response response) throws Exception {
+    public byte[] handle(Map<ParamEnum, String> params) {
+        String id = params.getOrDefault(ParamEnum.ID, "");
+        try {
+            ByteArrayOutputStream baos = fetchItem(id);
 
-        response.type("text/xml");
-        response.raw().setContentType("text/xml");
-        JAXBContext contextObj = JAXBContext.newInstance(Feed.class, Album.class, MiniAlbum.class, MiniArtist.class, MiniImage.class, Track.class, Artist.class, Genre.class, Mood.class, MiniTrack.class);
+            return baos.toByteArray();
+        } catch (JAXBException e) {
+            logger.error("Failed to marshal XML information for Album '" + id + "' when fetching Related Artist Albums", e);
+            return errorGen.generateErrorResponse(500, e.getMessage(), "");
+        }
+    }
 
-        Marshaller marshallerObj = contextObj.createMarshaller();
+    private ByteArrayOutputStream fetchItem(String id) throws JAXBException {
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+
+        Marshaller marshallerObj = jaxb.createMarshaller();
         marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Artist primaryArtist = Main.getStorage().readArtist(request.params(":id").toLowerCase());
+        Artist primaryArtist = storage.readArtist(id.toLowerCase());
 
         List<Artist> similarArtists = new ArrayList<>();
 
-        List<Artist> documents = Main.getStorage().getArtists();
+        List<Artist> documents = storage.getArtists();
 
         List<Album> related = new ArrayList<>();
 
@@ -66,7 +83,7 @@ public class GETRelatedArtistAlbums implements Route {
 
         for(Artist a : similarArtists) {
             if(a == primaryArtist) continue;
-            for(Album al : Main.getStorage().readAlbumsByArtist(a)) {
+            for(Album al : storage.readAlbumsByArtist(a)) {
                 if(related.contains(al)) continue;
                 if(Objects.equals(al.primaryArtist.id.toString(), primaryArtist.id.toString())) continue;
                 related.add(al);
@@ -77,15 +94,8 @@ public class GETRelatedArtistAlbums implements Route {
 
         Collections.shuffle(related);
         que.setEntries(related);
+        marshallerObj.marshal(que, result);
 
-
-
-
-
-
-        marshallerObj.marshal(que, baos);
-
-        System.out.println(request.url() + " | " + request.contextPath() + " | " + request.params() + " | " + request.queryParams() + " | " + request.queryString());
-        return baos.toString(Charset.defaultCharset().name());
+        return result; 
     }
 }

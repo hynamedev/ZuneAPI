@@ -1,32 +1,53 @@
 package me.hyname.route.album;
 
-import me.hyname.Main;
-import me.hyname.model.Album;
-import spark.Request;
-import spark.Response;
-import spark.Route;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.Charset;
+import java.util.Map;
 
-public class GETAlbumOverview implements Route {
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import me.hyname.enums.ParamEnum;
+import me.hyname.model.Album;
+import me.hyname.route.AbstractRoute;
+import me.hyname.storage.Storage;
+
+/**
+ * Returns album overview information
+ */
+public class GETAlbumOverview extends AbstractRoute {
+
+    public GETAlbumOverview(Storage storage, JAXBContext jaxb) {
+        super(storage, jaxb);
+    }
+
     @Override
-    public Object handle(Request request, Response response) throws Exception {
+    public byte[] handle(Map<ParamEnum, String> params) {
+        String id = params.getOrDefault(ParamEnum.ID, "");
+        try {
+            ByteArrayOutputStream baos = fetchItem(id);
 
-        response.type("text/xml");
-        response.raw().setContentType("text/xml");
-        JAXBContext contextObj = JAXBContext.newInstance(Album.class);
+            return baos.toByteArray();
+        } catch (JAXBException e) {
+            logger.error("Failed to marshal XML information for Album '" + id + "' when fetching Overview", e);
+            return errorGen.generateErrorResponse(500, e.getMessage(), "");
+        }
+    }
 
-        Marshaller marshallerObj = contextObj.createMarshaller();
+    /**
+     * Fetch the album over information from storage
+     * @param id UUID of the album being fetched
+     * @return ByteArray of marshalled XML information
+     * @throws JAXBException failure to marshal XML
+     */
+    private ByteArrayOutputStream fetchItem(String id) throws JAXBException{
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+
+        Marshaller marshallerObj = jaxb.createMarshaller();
         marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        Artist que= ArtistStorage.taylorSwift;
-        Album que = Main.getStorage().readAlbum(request.params(":id").toLowerCase());
-        marshallerObj.marshal(que, baos);
+        
+        Album que = storage.readAlbum(id.toLowerCase());
+        marshallerObj.marshal(que, result);
 
-        System.out.println(request.url() + " | " + request.contextPath() + " | " + request.params() + " | " + request.queryParams() + " | " + request.queryString());
-        return baos.toString(Charset.defaultCharset().name());
+        return result;
     }
 }

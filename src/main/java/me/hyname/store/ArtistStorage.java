@@ -1,21 +1,42 @@
 package me.hyname.store;
 
-import me.hyname.model.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
-import java.lang.reflect.Array;
-import java.util.*;
+import me.hyname.model.Album;
+import me.hyname.model.Artist;
+import me.hyname.model.Feature;
+import me.hyname.model.Genre;
+import me.hyname.model.MediaLink;
+import me.hyname.model.MiniArtist;
+import me.hyname.model.MiniImage;
+import me.hyname.model.MiniTrack;
+import me.hyname.model.Mood;
 
 // literally just here for debugging
 public class ArtistStorage {
-    public static Artist taylorSwift;
-    public static Album ts1989;
-    public static Album tsRed;
-    public static Album tsRep;
 
-    public static List<Feature> features = new ArrayList<>();
+
+    public Artist taylorSwift;
+    public Album ts1989;
+    public Album tsRed;
+    public Album tsRep;
+
+    public List<Feature> features = new ArrayList<>();
 
     public ArtistStorage() {
+        init();
+        
+        // storage.saveArtist(taylorSwift);
+        // storage.saveAlbum(ts1989);
+        // storage.saveAlbum(tsRed);
+        // storage.saveAlbum(tsRep);
+    }
 
+    public void init() {
         features = Arrays.asList(
                 new Feature(
                     "df2f08ac-4fdb-4ea8-8665-6193b0b26b9e",
@@ -212,5 +233,9 @@ public class ArtistStorage {
                         new MiniTrack("So It Goes...", "So It Goes...", UUID.randomUUID(), 9, true, false, 213, 0)
                 )
         );
+    }
+
+    public List<Feature> getFeatures() {
+        return features;
     }
 }

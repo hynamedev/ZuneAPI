@@ -1,34 +1,45 @@
 package me.hyname.route.image;
 
-import spark.Request;
-import spark.Response;
-import spark.Route;
-import spark.utils.IOUtils;
-
-import java.io.File;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.IOException;
+import java.util.Map;
 
-public class GETBackgroundImage implements Route {
+import javax.imageio.ImageIO;
+
+import jakarta.xml.bind.JAXBContext;
+import me.hyname.enums.ParamEnum;
+import me.hyname.route.AbstractRoute;
+import me.hyname.storage.Storage;
+
+public class GETBackgroundImage extends AbstractRoute {
+
+    public GETBackgroundImage(Storage storage, JAXBContext jaxb) {
+        super(storage, jaxb);
+    }
 
     @Override
-    public Object handle(Request request, Response response) throws Exception {
-        File file = new File("image/background/" + request.params(":id") + ".jpg");
-        response.type("image/jpeg");
-        InputStream is = new FileInputStream(file);
+    public byte[] handle(Map<ParamEnum, String> params) {
+        String id = params.getOrDefault(ParamEnum.ID, "");
+        try {
+            return fetchItem(id).toByteArray();
+        } catch (IOException e) {
+            logger.error("Failed to capture image information for '" + id + "' when fetching Background Image", e);
+            return errorGen.generateErrorResponse(500, e.getMessage(), "");
+        }
+    }
 
-        response.raw().setContentType("image/jpeg");
-        response.raw().setHeader("Content-Disposition", "inline; filename=" + file.getName());
+    private ByteArrayOutputStream fetchItem(String id) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        byte[] buffer = new byte[1024];
-        int len;
-        while ((len = is.read(buffer)) > 0) {
-            response.raw().getOutputStream().write(buffer, 0, len);
+        try (FileInputStream fileInStr = new FileInputStream("image/background/" + id + ".jpg")) {
+            BufferedImage image = ImageIO.read(fileInStr);
+            ImageIO.write(image, "jpg", baos);
+        } catch (IOException e) {
+            logger.error("Failed for id '" + id + "' to read image from cache and/or failed write requested image to ByteArray", e);
         }
 
-        String result = IOUtils.toString(is);
-        is.close();
-        System.out.println(request.url() + " | " + request.contextPath() + " | " + request.params() + " | " + request.queryParams() + " | " + request.queryString());
-        return result.trim();
+        return baos;
     }
 }

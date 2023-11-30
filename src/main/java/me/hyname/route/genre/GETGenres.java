@@ -1,44 +1,55 @@
 package me.hyname.route.genre;
 
-import me.hyname.Main;
-import me.hyname.model.*;
-import spark.Request;
-import spark.Response;
-import spark.Route;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-public class GETGenres implements Route {
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import me.hyname.enums.ParamEnum;
+import me.hyname.model.Feed;
+import me.hyname.model.Genre;
+import me.hyname.model.GenreInstance;
+import me.hyname.route.AbstractRoute;
+import me.hyname.storage.Storage;
+
+public class GETGenres extends AbstractRoute {
+
+    public GETGenres(Storage storage, JAXBContext jaxb) {
+        super(storage, jaxb);
+    }
+
     @Override
-    public Object handle(Request request, Response response) throws Exception {
-        response.type("text/xml");
-        response.raw().setContentType("text/xml");
-        JAXBContext contextObj = JAXBContext.newInstance(Feed.class, Album.class, MiniAlbum.class, MiniArtist.class, MiniImage.class, Track.class, Artist.class, Genre.class, GenreInstance.class);
+    public byte[] handle(Map<ParamEnum, String> params) {
+        try {
+            ByteArrayOutputStream baos = fetchItem();
 
-        Marshaller marshallerObj = contextObj.createMarshaller();
+            return baos.toByteArray();
+        } catch (JAXBException e) {
+            logger.error("Failed to marshal XML information for Genres", e);
+            return errorGen.generateErrorResponse(500, e.getMessage(), "");
+        }
+    }
+
+    private ByteArrayOutputStream fetchItem() throws JAXBException {
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+
+        Marshaller marshallerObj = jaxb.createMarshaller();
         marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        Feed<Genre> que = new Feed<>();
         Feed<GenreInstance> que = new Feed<>();
         List<GenreInstance> genres = new ArrayList<>();
 
-
-        for(Genre g : Genre.values()) {
+        for (Genre g : Genre.values()) {
             genres.add(new GenreInstance(g.id, g.title));
         }
 
         que.setEntries(genres);
 
-
-
         marshallerObj.marshal(que, baos);
 
-        System.out.println(request.url() + " | " + request.contextPath() + " | " + request.params() + " | " + request.queryParams() + " | " + request.queryString());
-        return baos.toString(Charset.defaultCharset().name());
-
+        return result;
     }
 }

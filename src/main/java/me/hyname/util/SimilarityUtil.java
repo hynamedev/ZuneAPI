@@ -1,18 +1,30 @@
 package me.hyname.util;
 
-import me.hyname.Main;
+import me.hyname.adapter.Adapter;
 import me.hyname.model.*;
+import me.hyname.storage.Storage;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.stereotype.Component;
+
 //todo: impl
+@Component
 public class SimilarityUtil {
-    public static List<Artist> getSimilarArtists(Artist primaryArtist) {
+
+    Storage storage;
+    Adapter adapater;
+
+    SimilarityUtil(Storage storage, Adapter adapter) {
+        
+    }
+
+    public List<Artist> getSimilarArtists(Artist primaryArtist) {
         List<Artist> similarArtists = new ArrayList<>();
 
-        List<Artist> documents = Main.getStorage().getArtists();
+        List<Artist> documents = storage.getArtists();
 
         for(Artist a : documents) {
             if(Objects.equals(primaryArtist.id.toString(), a.id.toString())) continue;
@@ -47,8 +59,8 @@ public class SimilarityUtil {
         return similarArtists;
     }
 
-    public static List<Album> getSimilarAlbums(Album primaryAlbum) {
-        Artist primaryArtist = Main.getStorage().readArtist(primaryAlbum.primaryArtist.id.toString());
+    public List<Album> getSimilarAlbums(Album primaryAlbum) {
+        Artist primaryArtist = storage.readArtist(primaryAlbum.primaryArtist.id.toString());
 
         List<Artist> similarArtists = getSimilarArtists(primaryArtist);
 
@@ -56,7 +68,7 @@ public class SimilarityUtil {
 
 
         for(Artist a : similarArtists) {
-            for(Album al : Main.getStorage().readAlbumsByArtist(a)) {
+            for(Album al : storage.readAlbumsByArtist(a)) {
                 if(related.contains(al)) continue;
                 related.add(al);
             }
@@ -65,15 +77,15 @@ public class SimilarityUtil {
         return related;
     }
 
-    public static List<Track> getSimilarTracks(Track primaryTrack) {
-        Artist primaryArtist = Main.getStorage().readArtist(primaryTrack.albumArtist.id.toString());
+    public List<Track> getSimilarTracks(Track primaryTrack) {
+        Artist primaryArtist = storage.readArtist(primaryTrack.albumArtist.id.toString());
 
-        List<Track> documents = Main.getStorage().getTracks();
+        List<Track> documents = storage.getTracks();
         List<Track> similarTracks = new ArrayList<>();
 
         for(Track t : documents) {
             if(Objects.equals(primaryTrack.id.toString(), t.id.toString())) continue;
-            Artist trackArtist = Main.getStorage().readArtist(t.albumArtist.id.toString());
+            Artist trackArtist = storage.readArtist(t.albumArtist.id.toString());
             if (t.albumArtist == primaryTrack.albumArtist) {
                 similarTracks.add(t);
             } else {

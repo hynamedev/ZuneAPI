@@ -13,15 +13,15 @@ public class LastFMAdapter extends Adapter {
     String token;
     Session session;
 
+    public LastFMAdapter(String key, String secret) {
+        this.key = key;
+        this.secret = secret;
+    }
+
     @Override
     public void init() {
         token = Authenticator.getToken(key);
         session = Authenticator.getSession(token, key, secret);
-    }
-
-    public LastFMAdapter(String key, String secret) {
-        this.key = key;
-        this.secret = secret;
     }
 
     @Override

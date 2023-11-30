@@ -1,33 +1,45 @@
 package me.hyname.route.track;
 
-import me.hyname.Main;
-import me.hyname.model.Album;
-import me.hyname.model.Track;
-import spark.Request;
-import spark.Response;
-import spark.Route;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.Charset;
+import java.util.Map;
 
-public class GETTrackOverview implements Route {
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import me.hyname.enums.ParamEnum;
+import me.hyname.model.Track;
+import me.hyname.route.AbstractRoute;
+import me.hyname.storage.Storage;
+
+public class GETTrackOverview extends AbstractRoute {
+
+    public GETTrackOverview(Storage storage, JAXBContext jaxb) {
+        super(storage, jaxb);
+    }
+
     @Override
-    public Object handle(Request request, Response response) throws Exception {
+    public byte[] handle(Map<ParamEnum, String> params) {
+        String id = params.getOrDefault(ParamEnum.ID, "");
+        try {
+            ByteArrayOutputStream baos = fetchItem(id);
 
-        response.type("text/xml");
-        response.raw().setContentType("text/xml");
-        JAXBContext contextObj = JAXBContext.newInstance(Album.class);
+            return baos.toByteArray();
+        } catch (JAXBException e) {
+            logger.error("Failed to marshal XML information for Track '" + id + "' when fetching Overview", e);
+            return errorGen.generateErrorResponse(500, e.getMessage(), "");
+        }
+    }
 
-        Marshaller marshallerObj = contextObj.createMarshaller();
+    private ByteArrayOutputStream fetchItem(String id) throws JAXBException {
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+
+        Marshaller marshallerObj = jaxb.createMarshaller();
         marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        Artist que= ArtistStorage.taylorSwift;
-        Track que = Main.getStorage().readTrack(request.params(":id").toLowerCase());
+        Track que = storage.readTrack(id.toLowerCase());
+
         marshallerObj.marshal(que, baos);
 
-        System.out.println(request.url() + " | " + request.contextPath() + " | " + request.params() + " | " + request.queryParams() + " | " + request.queryString());
-        return baos.toString(Charset.defaultCharset().name());
+        return result;
     }
 }

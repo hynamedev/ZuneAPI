@@ -1,12 +1,10 @@
 package me.hyname.storage;
 
-import com.mongodb.BulkWriteOperation;
 import me.hyname.model.Album;
 import me.hyname.model.Artist;
 import me.hyname.model.Track;
 
 import java.util.List;
-import java.util.UUID;
 
 
 public abstract class Storage {
@@ -16,10 +14,8 @@ public abstract class Storage {
     public abstract boolean saveArtist(Artist artist);
     public abstract Artist readArtist(String id);
 
-
     public abstract boolean saveTrack(Track track);
     public abstract Track readTrack(String id);
-
 
     public abstract boolean saveAlbum(Album album);
     public abstract Album readAlbum(String id);
@@ -33,4 +29,6 @@ public abstract class Storage {
     public abstract List<Track> getTracks();
 
     public abstract List<Artist> getArtists();
+
+    public abstract boolean shutdown();
 }

@@ -1,100 +1,82 @@
 package me.hyname.storage.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import me.hyname.model.Album;
 import me.hyname.model.Artist;
 import me.hyname.model.Track;
 import me.hyname.storage.Storage;
 
-import java.util.List;
+public class NoneStorage extends Storage {
 
-/**
- * @author Hyname
- * @apiNote Microsoft Azure Cosmos Implementation
- * <p>
- * @implNote I personally don't recommend using Cosmos
- * <p>Heres Why:
- * <p>- Closed Source
- * <p>- Unable to self-host
- * <p>- Unable to test this as I'm unable to self-host a cosmos db
- */
-public class CosmosStorage extends Storage {
-
-    public String host;
-    public String masterKey;
-
-
-    public CosmosStorage(String host, String masterKey) {
-        this.host = host;
-        this.masterKey = masterKey;
-    }
-
-    // ill finish this later
+    Logger logger = LogManager.getRootLogger();
 
     @Override
     public void init() {
-
+        logger.info("Debugging database initialized.  No queries will actually return anything in this mode");
     }
 
     @Override
     public boolean saveArtist(Artist artist) {
-        return false;
+        return true;
     }
 
     @Override
     public Artist readArtist(String id) {
-        return null;
+        return new Artist();
     }
 
     @Override
     public boolean saveTrack(Track track) {
-        return false;
+        return true;
     }
 
     @Override
     public Track readTrack(String id) {
-        return null;
+        return new Track();
     }
 
     @Override
     public boolean saveAlbum(Album album) {
-        return false;
+        return true;
     }
 
     @Override
     public Album readAlbum(String id) {
-        return null;
+        return new Album();
     }
 
     @Override
     public List<Album> readAlbumsByArtist(Artist artist) {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
     public List<Track> readTracksByArtist(Artist artist) {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
     public List<Album> getAlbums() {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
     public List<Track> getTracks() {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
     public List<Artist> getArtists() {
-        return null;
+        return new ArrayList<>();
     }
 
-    public String getHost() {
-        return host;
-    }
-
-    public String getMasterKey() {
-        return masterKey;
-    }
+    @Override
+    public boolean shutdown() {
+        return true;
+    }  
 }

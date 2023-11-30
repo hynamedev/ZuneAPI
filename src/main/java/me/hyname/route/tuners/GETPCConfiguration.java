@@ -1,16 +1,21 @@
 package me.hyname.route.tuners;
 
-import spark.Request;
-import spark.Response;
-import spark.Route;
+import java.util.Map;
 
-public class GETPCConfiguration implements Route {
+import jakarta.xml.bind.JAXBContext;
+import me.hyname.enums.ParamEnum;
+import me.hyname.route.AbstractRoute;
+import me.hyname.storage.Storage;
+
+public class GETPCConfiguration extends AbstractRoute {
+
+    public GETPCConfiguration(Storage storage, JAXBContext jaxb) {
+        super(storage, jaxb);
+    }
+
     @Override
-    public Object handle(Request request, Response response) throws Exception {
-        response.type("text/xml");
-        System.out.println(request.url() + " | " + request.contextPath() + " | " + request.params() + " | " + request.queryParams() + " | " + request.queryString());
-
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+    public byte[] handle(Map<ParamEnum, String> params) {
+        String result =  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<clientConfiguration xmlns=\"http://schemas.zune.net/ZunePCClient/2008/09\">\n" +
                 "    <targetedClient>PC,v4.8</targetedClient>\n" +
                 "    <documentVersion>0.7</documentVersion>\n" +
@@ -174,7 +179,8 @@ public class GETPCConfiguration implements Route {
                 "                </fieldValidator>\n" +
                 "                <fieldValidator>\n" +
                 "                    <name>phoneNumber</name>\n" +
-                "                    <regex>^(\\+?1[-\\.\\s]?)?(\\(\\d{3}\\)\\s?|\\d{3}[-\\.\\s]?)\\d{3}[-\\.\\s]?\\d{4}$</regex>\n" +
+                "                    <regex>^(\\+?1[-\\.\\s]?)?(\\(\\d{3}\\)\\s?|\\d{3}[-\\.\\s]?)\\d{3}[-\\.\\s]?\\d{4}$</regex>\n"
+                +
                 "                    <friendlyFormat>XXX-XXX-XXXX</friendlyFormat>\n" +
                 "                    <nameStringId>IDS_CONTACT_PHONE_LABEL</nameStringId>\n" +
                 "                </fieldValidator>\n" +
@@ -394,5 +400,7 @@ public class GETPCConfiguration implements Route {
                 "        </clientTypeMapping>\n" +
                 "    </phoneClientType>\n" +
                 "</clientConfiguration>";
+
+        return result.getBytes();
     }
 }

@@ -1,7 +1,7 @@
 package me.hyname.model;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "link", namespace = "http://schemas.zune.net/catalog/music/2007/10")
 public class MediaLink {

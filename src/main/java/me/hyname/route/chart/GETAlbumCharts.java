@@ -1,42 +1,52 @@
 package me.hyname.route.chart;
 
-import me.hyname.Main;
-import me.hyname.model.*;
-import spark.Request;
-import spark.Response;
-import spark.Route;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.Charset;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
-public class GETAlbumCharts implements Route {
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import me.hyname.enums.ParamEnum;
+import me.hyname.model.Album;
+import me.hyname.model.Feed;
+import me.hyname.route.AbstractRoute;
+import me.hyname.storage.Storage;
+
+public class GETAlbumCharts extends AbstractRoute {
+
+    public GETAlbumCharts(Storage storage, JAXBContext jaxb) {
+        super(storage, jaxb);
+    }
+
     @Override
-    public Object handle(Request request, Response response) throws Exception {
+    public byte[] handle(Map<ParamEnum, String> params) {
+        String id = params.getOrDefault(ParamEnum.ID, "");
+        try {
+            ByteArrayOutputStream baos = fetchItem(id);
 
-        response.type("text/xml");
-        response.raw().setContentType("text/xml");
-        JAXBContext contextObj = JAXBContext.newInstance(Feed.class, Album.class, MiniAlbum.class, MiniArtist.class, MiniImage.class, Track.class, Artist.class, Genre.class);
+            return baos.toByteArray();
+        } catch (JAXBException e) {
+            logger.error("Failed to marshal XML information for Album '" + id + "' when fetching Charts", e);
+            return errorGen.generateErrorResponse(500, e.getMessage(), "");
+        }
+    }
 
-        Marshaller marshallerObj = contextObj.createMarshaller();
+    private ByteArrayOutputStream fetchItem(String id) throws JAXBException {
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+
+        Marshaller marshallerObj = jaxb.createMarshaller();
         marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Feed<Album> que=  new Feed<>();
-        List<Album> albums = Main.getStorage().getAlbums();
+        Feed<Album> que = new Feed<>();
+        List<Album> albums = storage.getAlbums();
 
         albums.sort(Comparator.comparing(o -> o.popularity));
 
         que.setEntries(albums);
 
+        marshallerObj.marshal(que, result);
 
-
-
-        marshallerObj.marshal(que, baos);
-
-        System.out.println(request.url() + " | " + request.contextPath() + " | " + request.params() + " | " + request.queryParams() + " | " + request.queryString());
-        return baos.toString(Charset.defaultCharset().name());
+        return result;
     }
 }
